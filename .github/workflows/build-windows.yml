@@ -12,6 +12,11 @@ jobs:
     name: Build & Package (Windows)
     runs-on: windows-latest
 
+    # The repository default for GITHUB_TOKEN is read-only, which makes the
+    # release step fail with "Resource not accessible by integration".
+    permissions:
+      contents: write
+
     steps:
       # ── 1. Checkout ───────────────────────────────────────────────────────
       - name: Checkout repository
@@ -92,12 +97,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          count=$(gh release view "${{ github.ref_name }}" \
-                    --repo "${{ github.repository }}" \
-                    --json assets --jq '.assets | length' 2>/dev/null || echo 0)
+          # Distinguish "no release yet" (404 → this build publishes it) from a
+          # lookup that failed for another reason. Swallowing the difference
+          # would let a token or network error look like an empty release and
+          # overwrite a good one.
+          code=$(curl -sS -o release.json -w '%{http_code}' \
+                   -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" \
+                   "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}")
+          case "$code" in
+            200) count=$(node -e "console.log((require('./release.json').assets||[]).length)") ;;
+            404) count=0 ;;
+            *)   echo "::error::Unexpected HTTP $code checking release ${{ github.ref_name }}"
+                 cat release.json
+                 exit 1 ;;
+          esac
+          rm -f release.json
           echo "assets=$count" >> "$GITHUB_OUTPUT"
           if [ "$count" -gt 0 ]; then
             echo "Release ${{ github.ref_name }} already has $count asset(s) — skipping the release step."
+          else
+            echo "Release ${{ github.ref_name }} has no assets — this build will publish it."
           fi
 
       - name: Create GitHub Release
