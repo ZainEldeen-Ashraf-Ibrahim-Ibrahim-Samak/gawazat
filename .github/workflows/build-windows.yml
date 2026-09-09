@@ -81,8 +81,27 @@ jobs:
           retention-days: 30
 
       # ── 8. Create GitHub Release on version tags ──────────────────────────
-      - name: Create GitHub Release
+      # A release published locally with scripts/publish-release.mjs already
+      # carries its own assets and notes. Creating that release also creates the
+      # tag, which triggers this workflow — so check first and leave a populated
+      # release alone instead of overwriting it with this build.
+      - name: Check for an already-populated release
+        id: existing
         if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          count=$(gh release view "${{ github.ref_name }}" \
+                    --repo "${{ github.repository }}" \
+                    --json assets --jq '.assets | length' 2>/dev/null || echo 0)
+          echo "assets=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" -gt 0 ]; then
+            echo "Release ${{ github.ref_name }} already has $count asset(s) — skipping the release step."
+          fi
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') && steps.existing.outputs.assets == '0'
         uses: softprops/action-gh-release@v2
         with:
           files: |

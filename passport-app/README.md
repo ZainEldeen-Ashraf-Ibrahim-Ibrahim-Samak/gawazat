@@ -123,6 +123,31 @@ All assets are **auto-downloaded** on `npm install` (via `postinstall`) or manua
 3. Run `npm test` — all tests must pass before building.
 4. Run `npm run build-win` — the output will be in the `dist/` directory.
 
+## Publishing a GitHub Release
+
+```bash
+npm run setup:check   # verify toolchain, assets, .env and release state
+npm run build-win     # writes dist/*.exe
+npm run release:dry   # preview the tag, artifacts and release notes
+npm run release       # creates the tag and uploads dist/* to GitHub
+```
+
+`npm run release` (`scripts/publish-release.mjs`) creates the `v<version>` tag
+from the current commit through the GitHub API — no manual `git tag` needed —
+then uploads every installer, portable build and blockmap in `dist/`. Re-running
+it replaces the assets on the existing release instead of duplicating them.
+
+The token is read from `GH_TOKEN` in the environment or in **`.env.release`**,
+which is git-ignored. Do not keep it in `.env`: `electron-builder.config.js`
+bundles `.env` into the installer, so a token there would ship to every user —
+both scripts refuse to run when they find one.
+
+Useful flags: `--draft`, `--prerelease`, `--tag v1.0.1`, `--notes NOTES.md`,
+`--repo owner/name`, `--yes` (no prompt, implied on CI).
+
+Pushing a `v*.*.*` tag also triggers `.github/workflows/build-windows.yml`,
+which builds on `windows-latest` and publishes the release from CI instead.
+
 ## Project Structure
 
 ```

@@ -19,7 +19,12 @@
     "format": "prettier --write .",
     "postinstall": "node scripts/copy-vendor.js && node scripts/download-assets.js",
     "setup-assets": "node scripts/download-assets.js",
-    "mrz-to-excel": "node scripts/mrz-to-excel.js"
+    "mrz-to-excel": "node scripts/mrz-to-excel.js",
+    "setup": "node scripts/setup-native.mjs",
+    "setup:check": "node scripts/setup-native.mjs --check",
+    "release": "node scripts/publish-release.mjs",
+    "release:dry": "node scripts/publish-release.mjs --dry-run",
+    "release:build": "npm run build-win && node scripts/publish-release.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -50,5 +55,9 @@
     "sinon": "^22.0.0"
   },
   "author": "Port Said Authority",
-  "license": "PROPRIETARY"
+  "license": "PROPRIETARY",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZainEldeen-Ashraf-Ibrahim-Ibrahim-Samak/gawazat.git"
+  }
 }

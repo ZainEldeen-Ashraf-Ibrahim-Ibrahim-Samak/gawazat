@@ -11,3 +11,8 @@ userData/
 *~
 .idea/
 .vscode/local
+
+# local secrets — the app reads .env at runtime, CI writes its own from GitHub Secrets
+.env
+# publishing token for scripts/publish-release.mjs — never bundled into the installer
+.env.release
